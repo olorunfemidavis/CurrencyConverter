@@ -8,9 +8,15 @@
 
     <ItemGroup>
       <Folder Include="Commands\" />
-      <Folder Include="DTOs\" />
-      <Folder Include="Queries\" />
       <Folder Include="Services\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MediatR" Version="12.5.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CurrencyConverter.Infrastructure\CurrencyConverter.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>
