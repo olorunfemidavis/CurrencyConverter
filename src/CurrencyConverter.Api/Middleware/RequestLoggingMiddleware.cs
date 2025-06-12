@@ -2,6 +2,9 @@
 
 namespace CurrencyConverter.API.Middleware;
 
+/// <summary>
+/// Request logging middleware that logs details of incoming HTTP requests.
+/// </summary>
 public class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -13,6 +16,10 @@ public class RequestLoggingMiddleware
         _logger = logger;
     }
 
+    /// <summary>
+    /// Log the details of the incoming HTTP request, including method, endpoint, client IP, and response time.
+    /// </summary>
+    /// <param name="context"></param>
     public async Task InvokeAsync(HttpContext context)
     {
         var startTime = DateTime.UtcNow;
@@ -31,7 +38,6 @@ public class RequestLoggingMiddleware
         catch (Exception ex)
         {
             _logger.LogError(ex, "Request: {Method} {Endpoint} by ClientId {ClientId} from {ClientIp} failed", method, endpoint, clientId, clientIp);
-            throw;
         }
     }
 }

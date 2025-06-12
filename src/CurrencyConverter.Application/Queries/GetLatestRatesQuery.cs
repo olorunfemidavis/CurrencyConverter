@@ -2,6 +2,7 @@
 using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Providers;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace CurrencyConverter.Application.Queries;
@@ -16,12 +17,15 @@ public class GetLatestRatesQueryHandler : IRequestHandler<GetLatestRatesQuery, E
     private readonly ICurrencyProviderFactory _providerFactory;
     private readonly ICacheService _cacheService;
     private readonly ILogger<GetLatestRatesQueryHandler> _logger;
+    private readonly string _activeProvider;
 
-    public GetLatestRatesQueryHandler(ICurrencyProviderFactory providerFactory, ICacheService cacheService, ILogger<GetLatestRatesQueryHandler> logger)
+
+    public GetLatestRatesQueryHandler(ICurrencyProviderFactory providerFactory, ICacheService cacheService, ILogger<GetLatestRatesQueryHandler> logger, IConfiguration configuration)
     {
         _providerFactory = providerFactory;
         _cacheService = cacheService;
         _logger = logger;
+        _activeProvider = configuration["CurrencyProvider:ActiveProvider"] ?? string.Empty;
     }
 
     /// <summary>
@@ -40,7 +44,7 @@ public class GetLatestRatesQueryHandler : IRequestHandler<GetLatestRatesQuery, E
             return cachedRates;
         }
 
-        var provider = _providerFactory.CreateProvider("Frankfurter");
+        var provider = _providerFactory.CreateProvider(_activeProvider);
         var rates = await provider.GetLatestRatesAsync(request.BaseCurrency);
         await _cacheService.SetAsync(cacheKey, rates, TimeSpan.FromHours(1));
 

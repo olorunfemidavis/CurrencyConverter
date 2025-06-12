@@ -2,6 +2,7 @@
 using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Providers;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace CurrencyConverter.Application.Queries;
@@ -13,12 +14,15 @@ public class ConvertCurrencyQueryHandler : IRequestHandler<ConvertCurrencyQuery,
     private readonly ICurrencyProviderFactory _providerFactory;
     private readonly ICacheService _cacheService;
     private readonly ILogger<ConvertCurrencyQueryHandler> _logger;
+    private readonly string _activeProvider;
 
-    public ConvertCurrencyQueryHandler(ICurrencyProviderFactory providerFactory, ICacheService cacheService, ILogger<ConvertCurrencyQueryHandler> logger)
+
+    public ConvertCurrencyQueryHandler(ICurrencyProviderFactory providerFactory, ICacheService cacheService, ILogger<ConvertCurrencyQueryHandler> logger, IConfiguration configuration)
     {
         _providerFactory = providerFactory;
         _cacheService = cacheService;
         _logger = logger;
+        _activeProvider = configuration["CurrencyProvider:ActiveProvider"] ?? string.Empty;
     }
 
     /// <summary>
@@ -37,7 +41,7 @@ public class ConvertCurrencyQueryHandler : IRequestHandler<ConvertCurrencyQuery,
             return cachedResult;
         }
 
-        var provider = _providerFactory.CreateProvider("Frankfurter");
+        var provider = _providerFactory.CreateProvider(_activeProvider);
         var result = await provider.ConvertCurrencyAsync(request.FromCurrency, request.ToCurrency, request.Amount);
         await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
 

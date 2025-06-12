@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using Asp.Versioning;
+using CurrencyConverter.API.Middleware;
 using CurrencyConverter.Application.Queries;
 using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Caching;
@@ -41,7 +42,7 @@ namespace CurrencyConverter.API
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = builder.Configuration["Jwt:Issuer"],
                         ValidAudience = builder.Configuration["Jwt:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty))
                     };
                 });
             builder.Services.AddAuthorization(options =>
@@ -97,7 +98,7 @@ namespace CurrencyConverter.API
                         .AddHttpClientInstrumentation()
                         .AddZipkinExporter());
             builder.Services.AddSerilog((_, lc) => lc
-                .WriteTo.Seq(builder.Configuration["Seq:Url"])
+                .WriteTo.Seq(builder.Configuration["Seq:Url"] ?? string.Empty)
                 .Enrich.WithClientIp()
                 .Enrich.WithCorrelationId());
 
@@ -142,6 +143,9 @@ namespace CurrencyConverter.API
             var app = builder.Build();
 
             //Configure Middlewares
+            
+            // Register the ResponseLoggingMiddleware
+            app.UseMiddleware<RequestLoggingMiddleware>();
             app.UseSerilogRequestLogging();
             app.UseRateLimiter();
             app.UseAuthentication();

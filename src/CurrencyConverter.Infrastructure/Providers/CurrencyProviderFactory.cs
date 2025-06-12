@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CurrencyConverter.Infrastructure.Providers;
 
+/// <summary>
+/// CurrencyProviderFactory is responsible for creating instances of ICurrencyProvider.
+/// </summary>
 public class CurrencyProviderFactory : ICurrencyProviderFactory
 {
     private readonly IServiceProvider _serviceProvider;
