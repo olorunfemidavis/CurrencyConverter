@@ -1,4 +1,5 @@
-﻿using CurrencyConverter.Domain.Interfaces;
+﻿using System.Diagnostics;
+using CurrencyConverter.Domain.Interfaces;
 using System.Net.Http.Json;
 using CurrencyConverter.Domain.DTOs;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,8 @@ public class FrankfurterProvider : ICurrencyProvider
     private readonly HttpClient _httpClient;
     private readonly ILogger<FrankfurterProvider> _logger;
     private static readonly string[] ExcludedCurrencies = { "TRY", "PLN", "THB", "MXN" };
+    private static readonly ActivitySource ActivitySource = new("CurrencyConverter.API");
+
 
     public FrankfurterProvider(HttpClient httpClient, ILogger<FrankfurterProvider> logger)
     {
@@ -46,6 +49,12 @@ public class FrankfurterProvider : ICurrencyProvider
     /// <exception cref="HttpRequestException"></exception>
     public async Task<ExchangeRateResponse> ConvertCurrencyAsync(string fromCurrency, string toCurrency, decimal amount)
     {
+        
+        using var activity = ActivitySource.StartActivity("ConvertCurrency");
+        activity?.SetTag("fromCurrency", fromCurrency);
+        activity?.SetTag("toCurrency", toCurrency);
+        activity?.SetTag("amount", amount);
+        
         var response = await _httpClient.GetFromJsonAsync<ExchangeRateResponse>($"latest?from={fromCurrency}&to={toCurrency}&amount={amount}");
         if (response == null)
             throw new HttpRequestException("Invalid response from Frankfurter API");

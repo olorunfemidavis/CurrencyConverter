@@ -59,8 +59,7 @@ public class RatesController : ControllerBase
     /// <summary>
     /// Gets historical exchange rates for a specified base currency within a date range.
     /// </summary>
-    /// <remarks> Requires Admin role. </remarks>
-    /// <remarks>Use Date format YYYY-MM-DD For Example: 2025-06-12 </remarks>
+    /// <remarks> Requires Admin role. Use Date format YYYY-MM-DD For Example: 2025-06-12 </remarks>
     /// <param name="query"></param>
     /// <returns></returns>
     [HttpGet("historical")]

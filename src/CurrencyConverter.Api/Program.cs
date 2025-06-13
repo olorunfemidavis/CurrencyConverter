@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using Asp.Versioning;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Polly;
 using Serilog;
@@ -21,6 +23,35 @@ namespace CurrencyConverter.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            //Add OpenTelemetry for tracing
+            builder.Services.AddOpenTelemetry()
+                .ConfigureResource(resource => resource
+                    .AddService(serviceName: "CurrencyConverter.API", serviceVersion: "1.0.0"))
+                .WithTracing(tracing => tracing
+                    .AddAspNetCoreInstrumentation(options =>
+                    {
+                        options.RecordException = true;
+                        options.EnrichWithHttpRequest = (activity, request) =>
+                        {
+                            activity.SetTag("http.client_ip", request.HttpContext.Connection.RemoteIpAddress?.ToString());
+                        };
+                    })
+                    .AddHttpClientInstrumentation(options =>
+                    {
+                        options.EnrichWithHttpResponseMessage = (activity, response) =>
+                        {
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                activity.SetStatus(ActivityStatusCode.Error, response.ReasonPhrase);
+                            }
+                        };
+                    })
+                    .AddSource("CurrencyConverter.API")
+                    .AddZipkinExporter(zipkin =>
+                    {
+                        zipkin.Endpoint = new Uri(builder.Configuration["Zipkin:Endpoint"] ?? "http://localhost:9411/api/v2/spans");
+                    }));
 
             // Add services to the container.
 
@@ -81,7 +112,11 @@ namespace CurrencyConverter.API
                 };
             });
 
-            builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration["Redis:ConnectionString"]; });
+            builder.Services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = builder.Configuration["Redis:ConnectionString"];
+                options.InstanceName = "CurrencyConverter:";
+            });
 
             builder.Services.AddRateLimiter(options =>
             {
@@ -121,7 +156,7 @@ namespace CurrencyConverter.API
                 {
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
-                    Scheme = "bearer", 
+                    Scheme = "bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
                     Description = "Enter your JWT token in the text input.\nExample: \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
@@ -143,7 +178,7 @@ namespace CurrencyConverter.API
             var app = builder.Build();
 
             //Configure Middlewares
-            
+
             // Register the ResponseLoggingMiddleware
             app.UseMiddleware<RequestLoggingMiddleware>();
             app.UseSerilogRequestLogging();
