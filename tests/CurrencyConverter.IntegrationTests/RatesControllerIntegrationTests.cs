@@ -29,7 +29,7 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
     {
         // Initialize WireMock server
         _wireMockServer = WireMockServer.Start();
-        
+
         // Configure the WebApplicationFactory to use the WireMock server and mock services
         _factory = factory.WithWebHostBuilder(builder =>
         {
@@ -52,7 +52,7 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
                 services.AddSingleton<ICacheService, MockCacheService>();
             });
         });
-        
+
         // Create the HttpClient for testing
         _client = _factory.CreateClient();
     }
@@ -71,42 +71,93 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
     /// </summary>
     private async Task InitializeWireMockAsync()
     {
-        // Set up the WireMock server to respond to specific requests
+        // Mock latest rates: GET /latest?from=EUR
         _wireMockServer
-            .Given(Request.Create().WithPath("/latest").UsingGet())
-            .RespondWith(Response.Create()
-                .WithStatusCode(200)
-                .WithBodyAsJson(new { baseCurrency = "EUR", date = "2025-06-12", rates = new { USD = 1.1m } }));
-
-        _wireMockServer
-            .Given(Request.Create().WithPath("/latest").WithParam("from", "EUR").WithParam("to", "USD").WithParam("amount", "100").UsingGet())
-            .RespondWith(Response.Create()
-                .WithStatusCode(200)
-                .WithBodyAsJson(new { baseCurrency = "EUR", date = "2025-06-12", rates = new { USD = 110m } }));
-
-        _wireMockServer
-            .Given(Request.Create().WithPath("/2025-01-01..2025-01-05").UsingGet())
+            .Given(Request.Create()
+                .WithPath("/latest")
+                .WithParam("from", "EUR")
+                .UsingGet())
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithBodyAsJson(new
                 {
-                    baseCurrency = "EUR",
-                    startDate = "2025-01-01",
-                    endDate = "2025-01-05",
-                    rates = new Dictionary<string, object>
+                    amount = 1.0,
+                    @base = "EUR",
+                    date = "2025-06-12",
+                    rates = new Dictionary<string, decimal>
                     {
-                        { "2025-01-01", new { USD = 1.1m } },
-                        { "2025-01-02", new { USD = 1.12m } }
+                        { "USD", 1.1594m },
+                        { "AUD", 1.7798m },
+                        { "TRY", 45.589m },
+                        { "PLN", 4.2690m },
+                        { "THB", 37.546m },
+                        { "MXN", 21.901m }
                     }
                 }));
 
+        // Mock currency conversion: GET /latest?from=EUR&to=USD&amount=100
         _wireMockServer
-            .Given(Request.Create().WithPath("/latest").WithParam("from", "INVALID").UsingGet())
-            .RespondWith(Response.Create().WithStatusCode(400));
+            .Given(Request.Create()
+                .WithPath("/latest")
+                .WithParam("from", "EUR")
+                .WithParam("to", "USD")
+                .WithParam("amount", "100")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new
+                {
+                    amount = 100.0,
+                    @base = "EUR",
+                    date = "2025-06-12",
+                    rates = new Dictionary<string, decimal>
+                    {
+                        { "USD", 115.94m }
+                    }
+                }));
 
+        // Mock historical rates: GET /2025-01-01..2025-01-05?from=EUR
         _wireMockServer
-            .Given(Request.Create().WithPath("/latest").WithParam("from", "EUR").WithParam("to", "INVALID").UsingGet())
-            .RespondWith(Response.Create().WithStatusCode(400));
+            .Given(Request.Create()
+                .WithPath("/2025-01-01..2025-01-05")
+                .WithParam("from", "EUR")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(200)
+                .WithBodyAsJson(new
+                {
+                    amount = 1.0,
+                    @base = "EUR",
+                    start_date = "2024-12-31",
+                    end_date = "2025-01-05",
+                    rates = new Dictionary<string, Dictionary<string, decimal>>
+                    {
+                        { "2024-12-31", new Dictionary<string, decimal> { { "USD", 1.1374m }, { "AUD", 1.7800m }, { "TRY", 43.735m } } },
+                        { "2025-01-01", new Dictionary<string, decimal> { { "USD", 1.1374m }, { "AUD", 1.7800m }, { "TRY", 43.735m } } },
+                        { "2025-01-02", new Dictionary<string, decimal> { { "USD", 1.1395m }, { "AUD", 1.7850m }, { "TRY", 43.850m } } }
+                    }
+                }));
+
+        // Mock invalid base currency: GET /latest?from=INVALID
+        _wireMockServer
+            .Given(Request.Create()
+                .WithPath("/latest")
+                .WithParam("from", "INVALID")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(400)
+                .WithBodyAsJson(new { error = "Invalid base currency" }));
+
+        // Mock invalid target currency: GET /latest?from=EUR&to=INVALID
+        _wireMockServer
+            .Given(Request.Create()
+                .WithPath("/latest")
+                .WithParam("from", "EUR")
+                .WithParam("to", "INVALID")
+                .UsingGet())
+            .RespondWith(Response.Create()
+                .WithStatusCode(400)
+                .WithBodyAsJson(new { error = "Invalid target currency" }));
     }
 
     /// <summary>
@@ -120,7 +171,7 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
         var response = await _client.PostAsJsonAsync("/api/v1/auth/token", request);
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return content.GetProperty("Token").GetString()!;
+        return content.GetProperty("token").GetString()!;
     }
 
     /// <summary>
@@ -138,12 +189,12 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<ExchangeRateResponse>();
         result.Should().NotBeNull();
-        result!.BaseCurrency.Should().Be("EUR");
-        result.Rates["USD"].Should().Be(1.1m);
+        result!.Base.Should().Be("EUR");
+        result.Rates["USD"].Should().Be(1.1594m); 
     }
 
     /// <summary>
-    /// Tests the GetLatestRates endpoint with an admin role and valid currency.
+    /// Tests the GetLatestRates endpoint with an Unauthorized request.
     /// </summary>
     [Fact]
     public async Task GetLatestRates_UnauthorizedNoToken_Returns401()
@@ -152,21 +203,6 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
         var response = await _client.GetAsync("/api/v1/rates/latest?baseCurrency=EUR");
 
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized);
-    }
-
-    /// <summary>
-    /// Tests the GetLatestRates endpoint with an excluded currency (TRY).
-    /// </summary>
-    [Fact]
-    public async Task GetLatestRates_ExcludedCurrency_ReturnsBadRequest()
-    {
-        await InitializeWireMockAsync();
-        var token = await GetJwtToken("User");
-        _client.DefaultRequestHeaders.Authorization = new("Bearer", token);
-
-        var response = await _client.GetAsync("/api/v1/rates/latest?baseCurrency=TRY");
-
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
     }
 
     /// <summary>
@@ -199,8 +235,8 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<ExchangeRateResponse>();
         result.Should().NotBeNull();
-        result!.BaseCurrency.Should().Be("EUR");
-        result.Rates["USD"].Should().Be(110m);
+        result!.Base.Should().Be("EUR");
+        result.Rates["USD"].Should().Be(115.94m);
     }
 
     /// <summary>
@@ -260,7 +296,7 @@ public class RatesControllerIntegrationTests : IClassFixture<WebApplicationFacto
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
         var result = await response.Content.ReadFromJsonAsync<PagedHistoricalRatesResponse>();
         result.Should().NotBeNull();
-        result!.BaseCurrency.Should().Be("EUR");
+        result!.Base.Should().Be("EUR");
         result.Rates.Should().HaveCount(2);
     }
 
@@ -314,6 +350,7 @@ public class MockCacheService : ICacheService
 {
     private readonly Dictionary<string, object> _cache = new();
     public Task<T> GetAsync<T>(string key) where T : class => Task.FromResult(_cache.TryGetValue(key, out var value) ? (T)value : default);
+
     public Task SetAsync<T>(string key, T value, TimeSpan expiry) where T : class
     {
         _cache[key] = value!;

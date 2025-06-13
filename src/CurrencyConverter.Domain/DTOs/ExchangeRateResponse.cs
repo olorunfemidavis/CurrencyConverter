@@ -10,8 +10,11 @@ public record ExchangeRateResponse
     [JsonPropertyName("amount")]
     public double Amount { get; set; }
 
+    /// <summary>
+    /// Base currency code for the exchange rates (e.g., "USD", "EUR").
+    /// </summary>
     [JsonPropertyName("base")]
-    public string BaseCurrency { get; set; } = string.Empty;
+    public string Base { get; set; } = string.Empty;
 
     [JsonPropertyName("date")]
     public DateTime Date { get; init; }

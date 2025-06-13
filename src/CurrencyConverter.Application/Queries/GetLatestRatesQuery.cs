@@ -1,4 +1,5 @@
-﻿using CurrencyConverter.Domain.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+using CurrencyConverter.Domain.DTOs;
 using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Providers;
 using MediatR;
@@ -7,7 +8,11 @@ using Microsoft.Extensions.Logging;
 
 namespace CurrencyConverter.Application.Queries;
 
-public record GetLatestRatesQuery(string BaseCurrency) : IRequest<ExchangeRateResponse>;
+public record GetLatestRatesQuery(
+    [Required(ErrorMessage = "Base currency is required.")]
+    [RegularExpression(@"^[A-Z]{3}$", ErrorMessage = "Base currency must be a valid 3-letter ISO code.")]
+    string BaseCurrency
+) : IRequest<ExchangeRateResponse>;
 
 /// <summary>
 /// Handler for the GetLatestRatesQuery.

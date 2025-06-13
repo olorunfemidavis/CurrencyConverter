@@ -51,7 +51,7 @@ public class RatesController : ControllerBase
     {
         if (IsExcludedCurrency(query.FromCurrency) || IsExcludedCurrency(query.ToCurrency))
             return BadRequest("Currencies TRY, PLN, THB, MXN are not supported.");
-
+        
         var result = await _mediator.Send(query);
         return Ok(result);
     }

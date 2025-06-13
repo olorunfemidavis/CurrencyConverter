@@ -96,7 +96,7 @@ public class FrankfurterProvider : ICurrencyProvider
         return new PagedHistoricalRatesResponse
         {
             Amount = result.Amount,
-            BaseCurrency = baseCurrency,
+            Base = baseCurrency,
             StartDate = startDate,
             EndDate = endDate,
             Page = page,

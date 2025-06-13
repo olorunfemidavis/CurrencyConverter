@@ -1,4 +1,6 @@
-﻿using CurrencyConverter.Domain.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+using CurrencyConverter.Application.Helpers;
+using CurrencyConverter.Domain.DTOs;
 using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Providers;
 using MediatR;
@@ -7,7 +9,24 @@ using Microsoft.Extensions.Logging;
 
 namespace CurrencyConverter.Application.Queries;
 
-public record GetHistoricalRatesQuery(string BaseCurrency, DateTime StartDate, DateTime EndDate, int Page = 1, int PageSize = 10) : IRequest<PagedHistoricalRatesResponse>;
+public record GetHistoricalRatesQuery(
+    [Required(ErrorMessage = "Base currency is required.")]
+    [RegularExpression(@"^[A-Z]{3}$", ErrorMessage = "Base currency must be a valid 3-letter ISO code.")]
+    string BaseCurrency,
+
+    [Required(ErrorMessage = "Start date is required.")]
+    DateTime StartDate,
+
+    [Required(ErrorMessage = "End date is required.")]
+    [DateRange(nameof(StartDate), ErrorMessage = "EndDate must be greater than or equal to StartDate and not in the future.")]
+    DateTime EndDate,
+
+    [Range(1, int.MaxValue, ErrorMessage = "Page must be a positive integer.")]
+    int Page = 1,
+
+    [Range(1, 100, ErrorMessage = "Page size must be between 1 and 100.")]
+    int PageSize = 10
+) : IRequest<PagedHistoricalRatesResponse>;
 
 public class GetHistoricalRatesQueryHandler : IRequestHandler<GetHistoricalRatesQuery, PagedHistoricalRatesResponse>
 {

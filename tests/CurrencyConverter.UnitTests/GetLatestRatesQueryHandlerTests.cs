@@ -52,7 +52,7 @@ public class GetLatestRatesQueryHandlerTests
         var query = new GetLatestRatesQuery("EUR");
         var cachedResponse = new ExchangeRateResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             Date = DateTime.UtcNow.Date,
             Rates = new Dictionary<string, decimal> { { "USD", 1.1m } }
         };
@@ -80,7 +80,7 @@ public class GetLatestRatesQueryHandlerTests
         var query = new GetLatestRatesQuery("EUR");
         var providerResponse = new ExchangeRateResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             Date = DateTime.UtcNow.Date,
             Rates = new Dictionary<string, decimal> { { "USD", 1.1m } }
         };
@@ -179,7 +179,7 @@ public class GetLatestRatesQueryHandlerTests
         var query = new GetLatestRatesQuery("EUR");
         var cachedResponse = new ExchangeRateResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             Date = DateTime.UtcNow.Date,
             Rates = new Dictionary<string, decimal> { { "USD", 1.1m } }
         };

@@ -49,10 +49,10 @@ public class ConvertCurrencyQueryHandlerTests
     public async Task Handle_CacheHit_ReturnsCachedResult()
     {
         // Arrange
-        var query = new ConvertCurrencyQuery("EUR", "USD", 100m);
+        var query = new ConvertCurrencyQuery(){ FromCurrency = "EUR", ToCurrency = "USD", Amount = 100m };
         var cachedResponse = new ExchangeRateResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             Date = DateTime.UtcNow.Date,
             Rates = new Dictionary<string, decimal> { { "USD", 110m } }
         };
@@ -77,10 +77,10 @@ public class ConvertCurrencyQueryHandlerTests
     public async Task Handle_CacheMiss_CallsProviderAndCachesResult()
     {
         // Arrange
-        var query = new ConvertCurrencyQuery("EUR", "USD", 100m);
+        var query = new ConvertCurrencyQuery { FromCurrency = "EUR", ToCurrency = "USD", Amount = 100m };
         var providerResponse = new ExchangeRateResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             Date = DateTime.UtcNow.Date,
             Rates = new Dictionary<string, decimal> { { "USD", 110m } }
         };
@@ -110,7 +110,7 @@ public class ConvertCurrencyQueryHandlerTests
     public async Task Handle_InvalidProvider_ThrowsNotSupportedException()
     {
         // Arrange
-        var query = new ConvertCurrencyQuery("EUR", "USD", 100m);
+        var query = new ConvertCurrencyQuery { FromCurrency = "EUR", ToCurrency = "USD", Amount = 100m };
         _configurationMock.Setup(c => c["CurrencyProvider:ActiveProvider"]).Returns("InvalidProvider");
         _cacheServiceMock.Setup(c => c.GetAsync<ExchangeRateResponse>("convert:EUR:USD:100"))
             .ReturnsAsync((ExchangeRateResponse)null);
@@ -137,7 +137,7 @@ public class ConvertCurrencyQueryHandlerTests
     public async Task Handle_InvalidFromCurrency_ThrowsArgumentException()
     {
         // Arrange
-        var query = new ConvertCurrencyQuery("INVALID", "USD", 100m);
+        var query = new ConvertCurrencyQuery { FromCurrency = "INVALID", ToCurrency = "USD", Amount = 100m };
         _cacheServiceMock.Setup(c => c.GetAsync<ExchangeRateResponse>("convert:INVALID:USD:100"))
             .ReturnsAsync((ExchangeRateResponse)null);
         _providerMock.Setup(p => p.ConvertCurrencyAsync("INVALID", "USD", 100m))
@@ -157,7 +157,7 @@ public class ConvertCurrencyQueryHandlerTests
     public async Task Handle_CancellationRequested_ThrowsOperationCanceledException()
     {
         // Arrange
-        var query = new ConvertCurrencyQuery("EUR", "USD", 100m);
+        var query = new ConvertCurrencyQuery { FromCurrency = "EUR", ToCurrency = "USD", Amount = 100m };
         var cts = new CancellationTokenSource();
         _cacheServiceMock.Setup(c => c.GetAsync<ExchangeRateResponse>("convert:EUR:USD:100"))
             .ThrowsAsync(new OperationCanceledException());
@@ -176,10 +176,10 @@ public class ConvertCurrencyQueryHandlerTests
     public async Task Handle_CacheHit_LogsInformation()
     {
         // Arrange
-        var query = new ConvertCurrencyQuery("EUR", "USD", 100m);
+        var query = new ConvertCurrencyQuery { FromCurrency = "EUR", ToCurrency = "USD", Amount = 100m };
         var cachedResponse = new ExchangeRateResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             Date = DateTime.UtcNow.Date,
             Rates = new Dictionary<string, decimal> { { "USD", 110m } }
         };

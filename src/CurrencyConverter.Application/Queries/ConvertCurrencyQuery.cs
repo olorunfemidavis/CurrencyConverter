@@ -1,4 +1,5 @@
-﻿using CurrencyConverter.Domain.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+using CurrencyConverter.Domain.DTOs;
 using CurrencyConverter.Domain.Interfaces;
 using CurrencyConverter.Infrastructure.Providers;
 using MediatR;
@@ -7,8 +8,17 @@ using Microsoft.Extensions.Logging;
 
 namespace CurrencyConverter.Application.Queries;
 
-public record ConvertCurrencyQuery(string FromCurrency, string ToCurrency, decimal Amount) : IRequest<ExchangeRateResponse>;
+public class ConvertCurrencyQuery : IRequest<ExchangeRateResponse>
+{
+    [Required]
+    public string FromCurrency { get; set; }
 
+    [Required]
+    public string ToCurrency { get; set; }
+
+    [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be positive.")]
+    public decimal Amount { get; set; }
+}
 public class ConvertCurrencyQueryHandler : IRequestHandler<ConvertCurrencyQuery, ExchangeRateResponse>
 {
     private readonly ICurrencyProviderFactory _providerFactory;

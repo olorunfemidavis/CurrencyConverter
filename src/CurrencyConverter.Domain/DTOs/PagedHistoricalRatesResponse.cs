@@ -7,8 +7,11 @@ public record PagedHistoricalRatesResponse
     [JsonPropertyName("amount")]
     public double Amount { get; set; }
 
+    /// <summary>
+    /// Base currency code for the exchange rates (e.g., "USD", "EUR").
+    /// </summary>
     [JsonPropertyName("base")]
-    public string BaseCurrency { get; init; } = null!;
+    public string Base { get; init; } = null!;
 
     [JsonPropertyName("start_date")]
     public DateTime StartDate { get; init; }

@@ -52,7 +52,7 @@ public class GetHistoricalRatesQueryHandlerTests
         var query = new GetHistoricalRatesQuery("EUR", new DateTime(2025, 1, 1), new DateTime(2025, 1, 5), 1, 10);
         var cachedResponse = new PagedHistoricalRatesResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             StartDate = new DateTime(2025, 1, 1),
             EndDate = new DateTime(2025, 1, 5),
             Page = 1,
@@ -85,7 +85,7 @@ public class GetHistoricalRatesQueryHandlerTests
         var query = new GetHistoricalRatesQuery("EUR", new DateTime(2025, 1, 1), new DateTime(2025, 1, 5), 1, 10);
         var providerResponse = new PagedHistoricalRatesResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             StartDate = new DateTime(2025, 1, 1),
             EndDate = new DateTime(2025, 1, 5),
             Page = 1,
@@ -189,7 +189,7 @@ public class GetHistoricalRatesQueryHandlerTests
         var query = new GetHistoricalRatesQuery("EUR", new DateTime(2025, 1, 1), new DateTime(2025, 1, 5), 1, 10);
         var cachedResponse = new PagedHistoricalRatesResponse
         {
-            BaseCurrency = "EUR",
+            Base = "EUR",
             StartDate = new DateTime(2025, 1, 1),
             EndDate = new DateTime(2025, 1, 5),
             Page = 1,
